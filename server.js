@@ -1,91 +1,43 @@
 const express = require('express')
+const mongoose = require('mongoose')
+const User = require('./userModel')
+
 const app = express()
 
-const users = [
-  {
-    "id": 1,
-    "name": "Bikash"
-  },
-  {
-    "id": 2,
-    "name": "Anish"
-  },
-  {
-    "id": 3,
-    "name": "Sipuli"
-  },
-  {
-    "id": 4,
-    "name": "Arto"
-  },
-  {
-    "id": 5,
-    "name": "Yazan"
-  },
-  {
-    "id": 6,
-    "name": "Dung"
-  },
-  {
-    "id": 7,
-    "name": "Sikash"
-  },
-  {
-    "id": 8,
-    "name": "kash"
-  },
-  {
-    "id": 9,
-    "name": "Bdkash"
-  },
-]
+mongoose.connect('mongodb://localhost/api-pagination', { useNewUrlParser: true, useUnifiedTopology: true })
+const db = mongoose.connection
+db.once('open', async () => {
+  if (await User.countDocuments().exec() > 0) return
+  Promise.all([
+    User.create({ name: 'User 1' }),
+    User.create({ name: 'User 2' }),
+    User.create({ name: 'User 3' }),
+    User.create({ name: 'User 4' }),
+    User.create({ name: 'User 5' }),
+    User.create({ name: 'User 6' }),
+    User.create({ name: 'User 7' }),
+    User.create({ name: 'User 8' }),
+    User.create({ name: 'User 9' }),
+    User.create({ name: 'User 10' }),
+    User.create({ name: 'User 11' }),
+    User.create({ name: 'User 12' }),
+    User.create({ name: 'User 13' }),
+    User.create({ name: 'User 14' }),
+    User.create({ name: 'User 15' }),
+    User.create({ name: 'User 16' }),
+    User.create({ name: 'User 17' }),
+    User.create({ name: 'User 18' }),
+  ]).then(() => console.log("user added"))
 
-const posts = [
-  {
-    "id": 1,
-    "name": "Post Bikash"
-  },
-  {
-    "id": 2,
-    "name": "Anish"
-  },
-  {
-    "id": 3,
-    "name": "Sipuli"
-  },
-  {
-    "id": 4,
-    "name": "Post Arto"
-  },
-  {
-    "id": 5,
-    "name": "Yazan"
-  },
-  {
-    "id": 6,
-    "name": "Dung"
-  },
-  {
-    "id": 7,
-    "name": "Sikash"
-  },
-  {
-    "id": 8,
-    "name": "kash"
-  },
-  {
-    "id": 9,
-    "name": "Bdkash"
-  },
-]
+})
 
-app.get('/users', paginationNumber(users), (req, res) => {
+app.get('/users', paginationNumber(User), (req, res) => {
 
   res.json(res.paginatedResults)
 })
 
 function paginationNumber(model) {
-  return (req, res, next) => {
+  return async (req, res, next) => {
     const page = parseInt(req.query.page)
     const limit = parseInt(req.query.limit)
     const startIndex = (page - 1) * limit
@@ -100,16 +52,20 @@ function paginationNumber(model) {
       }
     }
 
-    if (endIndex < model.length) {
+    if (endIndex < await model.countDocuments().exec()) {
 
       results.next = {
         page: page + 1,
         limit: limit
       }
     }
-    results.result = model.slice(startIndex, endIndex)
-    res.paginatedResults = results
-    next()
+    try {
+      results.result = await model.find().limit(limit).skip(startIndex).exec()
+      res.paginatedResults = results
+      next()
+    } catch (err) { res.send("500" + err) }
+
+
   }
 
 
